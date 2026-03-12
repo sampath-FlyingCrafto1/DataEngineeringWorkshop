@@ -6,22 +6,49 @@ services:
       POSTGRES_PASSWORD: "root"
       POSTGRES_DB: "ny_taxi"
     volumes:
-      - ny_taxi_postgres_data:/var/lib/postgresql
+      - ny_taxi_postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    networks:
+      - taxi_network
 
   pgadmin:
     image: dpage/pgadmin4
+    user: root
     environment:
       PGADMIN_DEFAULT_EMAIL: "admin@admin.com"
       PGADMIN_DEFAULT_PASSWORD: "root"
+      PGADMIN_LISTEN_ADDRESS: "0.0.0.0"
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     ports:
-      - "8085:80"
+      - "8080:80"
+    networks:
+      - taxi_network
+    depends_on:
+      - pgdatabase
 
-
+  ingestor:
+    build:
+      context: .
+    environment:
+      - PG_USER=root
+      - PG_PASS=root
+      - PG_HOST=pgdatabase
+      - PG_PORT=5432
+      - PG_DB=ny_taxi
+    volumes:
+      - ./data:/code/data
+    networks:
+      - taxi_network
+    depends_on:
+      - pgdatabase
+    entrypoint: [ "python", "ingest_data.py", "--pg-user", "root", "--pg-pass", "root", "--pg-host", "pgdatabase", "--pg-port", "5432", "--pg-db", "ny_taxi", "--data-dir", "/code/data" ]
 
 volumes:
   ny_taxi_postgres_data:
   pgadmin_data:
+
+networks:
+  taxi_network:
+    driver: bridge
