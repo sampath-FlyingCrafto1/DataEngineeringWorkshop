@@ -9,4 +9,5 @@ RUN uv sync --locked
 
 COPY ingest_data.py .
 
+# Entrypoint is defined in docker-compose.yaml for more flexibility
 ENTRYPOINT ["python", "ingest_data.py"]
